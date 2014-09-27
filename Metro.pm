@@ -53,27 +53,33 @@ sub station{
 sub line_japanese{
  my $self = shift;
  my $line = $self->line;
- my $japanese_line = [];
+ my $lines = [];
  my $station = $self->station;
  for my $metro(@{$line}){
    for my $key (%$metro){
      next if (not defined $metro->{$key});
-     my $value = [];
+     my $hash = {};
+     my $japanese_line = [];
      for my $metro_line(@{$metro->{$key}}){
          $metro_line =~ s/odpt.Station://;
          $metro_line =~ s/(\w+).(\w+).(\w+)/$3/;
-         push @$value,$metro_line;
+         my $line_hash = {};
+         $line_hash->{line} = $metro_line;
+         $line_hash->{japanese} = $station->[0]->{$metro_line};
+         push @$japanese_line,$line_hash;        
      }
      $key =~ s/odpt.Railway://;
-     push @$japanese_line,{$key => $value};
+     $hash->{linename} = $key;
+     $hash->{line} = $japanese_line;
+     push @$lines,$hash;
    }
  }
- return $japanese_line;
+ return $lines;
 }
 
 my $metro = Metro->new(api_key => 'e4346dc05e12b8e457bdfe693a858f83aa7a31ebed6af708f410543c4e5e5c4b');
 
-print Dumper $metro->line_japanese;
+#print Dumper $metro->line_japanese;
 
 1;
 

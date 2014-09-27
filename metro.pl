@@ -8,18 +8,18 @@ my $metro = Metro->new(api_key => 'e4346dc05e12b8e457bdfe693a858f83aa7a31ebed6af
 
 get '/' => sub{
  my $self = shift;
- print Dumper $metro->line_japanese;
  $self->render('index');
 };
 
 get '/foo.json' => sub{
  my $self = shift;
- my $data = $metro->station;
+ my $line = $metro->line_japanese;
+ my $data = JSON::encode_json($line); 
+ print Dumper $data;
  $self->render(json => $data);
 };
 
 app->start;
-
 
 __DATA__
 @@ index.html.ep
@@ -32,6 +32,7 @@ __DATA__
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
 </head>
 <body>
+<ul id="output"></ul>
 <script type="text/javascript">
 function showMsg(){
 $.ajax({
@@ -39,9 +40,8 @@ $.ajax({
  url:'http://localhost:3000/foo.json',
  dataType:'json',
 success: function(json){
-  var len = json.length;
-  for(var i = 0 ;i < len;i++){
-    alert(json);
+  for(var i in json){
+     alert(json[i].linename);
   }
  }
 });
@@ -50,6 +50,5 @@ success: function(json){
 <button onClick="showMsg();">Click</button>
 </body>
 </html>
-
 
 
