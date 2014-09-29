@@ -33,9 +33,9 @@ __DATA__
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
 </head>
 <body>
-<ul id="output"></ul>
+<div id="output"></div>
 <script type="text/javascript">
-  $(document).ready(function(){
+ $(document).ready(function(){
   $.ajax({
    type:'GET',
    url:'http://localhost:3000/foo.json',
@@ -47,16 +47,26 @@ __DATA__
             $("#output").append("<li>&nbsp;" + json[i].line[j].japanese + "(" + json[i].line[j].line +")" + "</li>");
       }
     }
-  }
+   }
+  });
+
+   $('input[name="get"]').click(function(){
+     data = document.getElementById("output").innerHTML; 
+     alert(data);
+   });
  });
-});
+
 </script>
+
 <style type="text/css">
  #output{
    font-size: 10px;
    background: #cc9999;
  }
 </style>
+
+<input type="button" name="get" value="Get Data"/>
+
 </body>
 </html>
 
