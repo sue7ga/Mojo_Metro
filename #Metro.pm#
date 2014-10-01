@@ -102,7 +102,8 @@ sub get_from_to{
  my $railfare = END_POINT."/datapoints";
  my $param = {
   "rdf:type" => "odpt:RailwayFare",
-  "odpt:fromStation" => 
+  "odpt:fromStation" => odpt.Station:"",
+  "odpt:fromStation" => odpt.Station:"",
  };
 }
 
