@@ -27,7 +27,7 @@ get '/hogehoge' => sub{
  my $self = shift;
  my $param = $self->req->body_params->to_hash;
  print Dumper $param;
- $self->render(json => 'hoge');
+ $self->render(json => "aiueo");
 };
 
 post '/from/to' => sub{
@@ -94,49 +94,27 @@ __DATA__
 </script>
 </head>
 <body>
-<div id="output"></div>
 
 <form id="form" action="#">
  <input type="text" size="40" name="q"/>
  <input type="submit" value="検索"/>
 </form>
 
+<div id="output"></div>
+
 <script type="text/javascript">
- 
- $(document).ready(function(){
-
-   $('#form').submit(function(){
-       var query = $(this).children('input=["name"]').val();
-       alert(query);
-       if(!query) return false;
-       $.ajax({
-	type:'GET',
- 	url:'/hogehoge',
-       data:{
-	  q: query,
-          },
-       dataType:'json',
-       success: function(json){
-              alert(json);
-       }   
-	  });     
-   });  
- }
-
-   $.ajax({
+$(document).ready(function(){
+ $('#form').submit(function(){
+  $.ajax({
     type:'GET',
-    url:'http://localhost:3000/foo.json',
+    url:'http://localhost:3000/hogehoge',
     dataType:'json',
     success: function(json){
-      for(var i in json){
-         $("#output").append("<li><strong>" + json[i].linename + "</li></strong>");
-         for(var j in json[i].line){
-            $("#output").append("<li>&nbsp;" + json[i].line[j].japanese + "(" + json[i].line[j].line + ")" + "</li>");
-         }
-     }
+      alert(json);
     }
   });
  });
+});
 </script>
 
 <style type="text/css">
