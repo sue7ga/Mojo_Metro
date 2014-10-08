@@ -25,6 +25,8 @@ get '/foo.json' => sub{
 
 get '/hogehoge' => sub{
  my $self = shift;
+ my $param = $self->req->body_params->to_hash;
+ print Dumper $param;
  $self->render(json => 'hoge');
 };
 
@@ -102,11 +104,14 @@ __DATA__
 <script type="text/javascript">
  
  $(document).ready(function(){
+
    $('#form').submit(function(){
        var query = $(this).children('input=["name"]').val();
+       alert(query);
+       if(!query) return false;
        $.ajax({
-	type:'GET'
- 	  url:'/hogehoge',
+	type:'GET',
+ 	url:'/hogehoge',
        data:{
 	  q: query,
           },
@@ -114,7 +119,7 @@ __DATA__
        success: function(json){
               alert(json);
        }   
-       });     
+	  });     
    });  
  }
 
