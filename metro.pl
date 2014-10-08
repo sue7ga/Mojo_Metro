@@ -9,8 +9,12 @@ my $metro = Metro->new(api_key => 'e4346dc05e12b8e457bdfe693a858f83aa7a31ebed6af
 get '/' => sub{
  my $self = shift;
  my $line = $metro->line_japanese;
- print Dumper $line;
  $self->render('index');
+};
+
+get '/unko' => sub{
+ my $self = shift;
+ $self->render('unko');
 };
 
 get '/foo.json' => sub{
@@ -19,16 +23,64 @@ get '/foo.json' => sub{
  $self->render(json => $line);
 };
 
+get '/hogehoge' => sub{
+ my $self = shift;
+ $self->render(json => 'hoge');
+};
+
 post '/from/to' => sub{
   my $self = shift;
   my $from = $self->param('from');
   my $to = $self->param('to');
-  $self->render(text => "$from:$to");
+  my $fare = $metro->get_fare_by_from_to($from,$to);
+  my $facility = $metro->get_facility_by_to($to);
+  $self->stash->{facility} = $facility;
+  $self->stash->{fare} = $fare;
+  $self->render('fare');
+};
+
+post '/line' => sub{
+ my $self = shift;
+ my $unko_information  = $metro->get_trainInformationText_by_linename($self->param('line'));
+ $self->stash->{line} = $unko_information;
+ $self->render('unko');
 };
 
 app->start;
 
 __DATA__
+
+@@ line.html.ep
+
+<%= $line %>
+
+@@ unko.html.ep
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equive="Content-Type" content="text/html; charset=UTF-8">
+<title>Station Application</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript">
+</script>
+</head>
+<body>
+
+<%= $line %>
+
+  <form action="<%= url_for('line') %>" method="post" style="border:1px solid gray">
+   <b>From</b><%= text_field 'line' %><br>
+   <input type="submit" value="Post">
+  </from>
+
+<script type="text/javascript">
+
+</script>
+<style type="text/css">
+</style>
+</body>
+</html>
+
+
 @@ index.html.ep
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -41,8 +93,31 @@ __DATA__
 </head>
 <body>
 <div id="output"></div>
+
+<form id="form" action="#">
+ <input type="text" size="40" name="q"/>
+ <input type="submit" value="検索"/>
+</form>
+
 <script type="text/javascript">
+ 
  $(document).ready(function(){
+   $('#form').submit(function(){
+       var query = $(this).children('input=["name"]').val();
+       $.ajax({
+	type:'GET'
+ 	  url:'/hogehoge',
+       data:{
+	  q: query,
+          },
+       dataType:'json',
+       success: function(json){
+              alert(json);
+       }   
+       });     
+   });  
+ }
+
    $.ajax({
     type:'GET',
     url:'http://localhost:3000/foo.json',
@@ -74,5 +149,23 @@ __DATA__
 
 </body>
 </html>
+
+@@ fare.html.ep
+
+<p>
+<b>運賃は<%= $fare %>円</b>
+    % my $count = 1;
+  % for my $facility(@$facility){
+    <li><%= $count++ %></li>
+    <li><%= $facility->{"\@type"} %></li>
+    <li><%= $facility->{"ugsrv:categoryName"} %></li>
+  % }
+</p>
+
+<a href="/"></a>
+
+
+
+
 
 
