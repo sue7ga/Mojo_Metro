@@ -25,7 +25,7 @@ get '/foo.json' => sub{
 
 get '/hogehoge' => sub{
  my $self = shift;
-
+ print Dumper 
  $self->render(json => "aiueo");
 };
 
