@@ -78,11 +78,11 @@ sub line_japanese{
 
 use utf8;
 my $line_name_map = {
-    Encode::encode_utf8('丸の内線') => 'TkyoMetro.Marunouchi',
+    Encode::encode_utf8('丸の内線') => 'TokyoMetro.Marunouchi',
     Encode::encode_utf8('日比谷線') => 'TokyoMetro.Hibiya',
     Encode::encode_utf8('銀座線') => 'TokyoMetro.Ginza',
     Encode::encode_utf8('東西線') => 'TokyoMetro.Tozai',
-    Encode::encode_utf8('千代田線')         => 'TokyoMetro.Chiyoda',
+    Encode::encode_utf8('千代田線')  => 'TokyoMetro.Chiyoda',
     Encode::encode_utf8('有楽町線') => 'TokyoMetro.Yurakucho',
     Encode::encode_utf8('半蔵門線')  => 'TokyoMetro.Hanzomon',
     Encode::encode_utf8('南北線') => 'TokyoMetro.Namboku',
@@ -91,10 +91,10 @@ my $line_name_map = {
 
 sub get_trainInformationText_by_linename{
  my ($self,$linename) = @_;
- $linename = Encode::encode_utf8($linename);
+ #$linename = Encode::encode_utf8($linename);
  my $param = {
   "rdf:type" => "odpt:TrainInformation",
-  "odpt:railway" => "odpt.Railway:"."$line_name_map->{$linename}",
+  "odpt:railway" => "odpt.Railway:"."$linename",
   "acl:consumerKey" => $self->api_key,
  };
  my $url = END_POINT."datapoints";
@@ -104,6 +104,7 @@ sub get_trainInformationText_by_linename{
  my $ua = LWP::UserAgent->new;
  my $res = $ua->get($railway);
  my $json = JSON::decode_json($res->decoded_content);
+ print Dumper $json->[0]->{'odpt:timeOfOrigin'};
  return $json->[0]->{'odpt:trainInformationText'};
 }
 
@@ -138,7 +139,6 @@ sub get_fare_by_from_to{
  };
  $railurl->query_form(%$param);
  $railurl =~ s/%3A/:/g;
- #return $railurl;
  my $ua = LWP::UserAgent->new;
  my $res = $ua->get($railurl);
  my $json = JSON::decode_json($res->decoded_content);

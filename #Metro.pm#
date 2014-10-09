@@ -1,5 +1,4 @@
 package Metro;
-
 use strict;
 use warnings;
 use Mouse;
@@ -25,7 +24,6 @@ sub datapoints{
  $url =~ s/%3A/:/g;
  my $ua = LWP::UserAgent->new;
  my $res = $ua->get($url);
- #my $json = $res->decoded_content;
  my $json = JSON::decode_json($res->decoded_content);
  return $json;
 }
@@ -78,7 +76,40 @@ sub line_japanese{
  return $lines;
 }
 
-sub get_from_to{
+use utf8;
+my $line_name_map = {
+    Encode::encode_utf8('丸の内線') => 'TkyoMetro.Marunouchi',
+    Encode::encode_utf8('日比谷線') => 'TokyoMetro.Hibiya',
+    Encode::encode_utf8('銀座線') => 'TokyoMetro.Ginza',
+    Encode::encode_utf8('東西線') => 'TokyoMetro.Tozai',
+    Encode::encode_utf8('千代田線')         => 'TokyoMetro.Chiyoda',
+    Encode::encode_utf8('有楽町線') => 'TokyoMetro.Yurakucho',
+    Encode::encode_utf8('半蔵門線')  => 'TokyoMetro.Hanzomon',
+    Encode::encode_utf8('南北線') => 'TokyoMetro.Namboku',
+    Encode::encode_utf8('副都心線') => 'TokyoMetro.Fukutoshin'
+};
+
+sub get_trainInformationText_by_linename{
+ my ($self,$linename) = @_;
+ $linename = Encode::encode_utf8($linename);
+ my $param = {
+  "rdf:type" => "odpt:TrainInformation",
+  "odpt:railway" => "odpt.Railway:"."$line_name_map->{$linename}",
+  "acl:consumerKey" => $self->api_key,
+ };
+ my $url = END_POINT."datapoints";
+ my $railway = URI->new($url);
+ $railway->query_form(%$param);
+ $railway =~ s/%3A/:/g;
+ my $ua = LWP::UserAgent->new;
+ my $res = $ua->get($railway);
+ my $json = JSON::decode_json($res->decoded_content);
+ return $json->[0]->{'odpt:trainInformationText'};
+}
+
+no utf8;
+
+sub get_fare_by_from_to{
  my $self = shift;
  my($from,$to) = @_;
  $from = Encode::decode_utf8($from);
@@ -89,27 +120,59 @@ sub get_from_to{
    for my $line(@{$japanese->{line}}){
      if($line->{japanese} eq $from){
        $ret_from = "$japanese->{linename}".".$line->{line}";
-       next;    
+       next;
     }
     if($line->{japanese} eq $to){
        $ret_to   = "$japanese->{linename}".".$line->{line}";
-       next;    
+       next;
     }
    }
  }
- return($ret_from,$ret_to);
- 
- my $railfare = END_POINT."/datapoints";
+ my $railfare = END_POINT."datapoints";
+ my $railurl = URI->new($railfare);
  my $param = {
   "rdf:type" => "odpt:RailwayFare",
-  "odpt:fromStation" => odpt.Station:"",
-  "odpt:fromStation" => odpt.Station:"",
+  "odpt:fromStation" => "odpt.Station:"."$ret_from",
+  "odpt:toStation" => "odpt.Station:"."$ret_to",
+  "acl:consumerKey" => $self->api_key,
  };
+ $railurl->query_form(%$param);
+ $railurl =~ s/%3A/:/g;
+ #return $railurl;
+ my $ua = LWP::UserAgent->new;
+ my $res = $ua->get($railurl);
+ my $json = JSON::decode_json($res->decoded_content);
+ return $json->[0]->{'odpt:ticketFare'};
+}
+
+sub get_facility_by_to{
+ my $self = shift;
+ my $to = shift;
+ $to  = Encode::decode_utf8($to);
+ my $line = $self->line_japanese;
+ my $station = $self->station;
+ my $station_list = $station->[0];
+ my $ret;
+ for my $station(keys %$station_list){
+  $ret = $station if $station_list->{$station} eq $line;
+ }
+ my $railfare = END_POINT."datapoints";
+ my $railurl = URI->new($railfare);
+ my $param = {
+  "rdf:type" => "odpt:StationFacility",
+  "owl:sameAs" => "odpt.StationFacility:"."$ret",
+  "acl:consumerKey" => $self->api_key,
+ };
+ $railurl->query_form(%$param);
+ $railurl =~ s/%3A/:/g;
+ my $ua = LWP::UserAgent->new;
+ my $res = $ua->get($railurl);
+ my $json = JSON::decode_json($res->decoded_content);
+ return $json->[0]->{"odpt:barrierfreeFacility"};
 }
 
 my $metro = Metro->new(api_key => 'e4346dc05e12b8e457bdfe693a858f83aa7a31ebed6af708f410543c4e5e5c4b');
 
-print Dumper $metro->get_from_to('木場','飯田橋');
 
 1;
 
