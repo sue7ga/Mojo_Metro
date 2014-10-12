@@ -108,6 +108,20 @@ sub get_trainInformationText_by_linename{
  return $json->[0]->{'odpt:trainInformationText'};
 }
 
+sub station_englishname_2_japname{
+  my($self,$eng) = @_;
+  return $self->station->[0]->{$eng};
+};
+
+sub station_japname_2_englishname{
+ my($self,$jap) = @_;
+ $jap = Encode::decode_utf8($jap);
+ my $station_map = $self->station->[0];
+ for my $key(keys %$station_map){
+   return $key if $station_map->{$key} eq $jap;
+ }
+};
+
 no utf8;
 
 sub get_fare_by_from_to{
@@ -192,8 +206,7 @@ sub get_women_info_by_linetitle{
 
 my $metro = Metro->new(api_key => 'e4346dc05e12b8e457bdfe693a858f83aa7a31ebed6af708f410543c4e5e5c4b');
 
-#print Dumper $metro->get_women_info_by_linetitle('日比谷');
-
+#print Dumper $metro->line;
 
 1;
 

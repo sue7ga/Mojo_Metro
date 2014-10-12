@@ -10,11 +10,26 @@ my $metro = Metro->new(api_key => 'e4346dc05e12b8e457bdfe693a858f83aa7a31ebed6af
 get '/' => sub{
  my $self = shift;
  my $line = $metro->line_japanese;
+ $self->stash->{Line} = $metro->line;
 } => 'index';
 
 get '/women' => sub{
  my $self = shift;
  $self->render('women');
+};
+
+get '/connect' => sub{
+ my $self = shift;
+ $self->stash->{Ginza} = $metro->line->[1]->{'odpt.Railway:TokyoMetro.Ginza'};
+ $self->stash->{Marunouchi} = $metro->line->[2]->{'odpt.Railway:TokyoMetro.Marunouchi'};
+ $self->stash->{Hibiya} = $metro->line->[3]->{'odpt.Railway:TokyoMetro.Hibiya'};
+ $self->stash->{Tozai} = $metro->line->[4]->{'odpt.Railway:TokyoMetro.Tozai'};
+ $self->stash->{Chiyoda} = $metro->line->[5]->{'odpt.Railway:TokyoMetro.Chiyoda'};
+ $self->stash->{Yurakucho} = $metro->line->[6]->{'odpt.Railway:TokyoMetro.Yurakucho'};
+ $self->stash->{Hanzomon} = $metro->line->[7]->{'odpt.Railway:TokyoMetro.Hanzomon'};
+ $self->stash->{Namboku} = $metro->line->[8]->{'odpt.Railway:TokyoMetro.Namboku'};
+ $self->stash->{Fukutoshin} = $metro->line->[9]->{'odpt.Railway:TokyoMetro.Fukutoshin'};
+ $self->render('connect');
 };
 
 get '/unko' => sub{
@@ -75,6 +90,126 @@ get '/linewomen' => sub{
 app->start;
 
 __DATA__
+
+@@ connect.html.ep
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equive="Content-Type" content="text/html; charset=UTF-8">
+<title>Station Application</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript">
+</script>
+<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<div id="acMenu">
+ <dt>銀座線</dt>
+ <dd>
+  % for my $ginza(@$Ginza){
+  <li><%= $ginza %></li>
+  % }
+ </dd>
+ <dt>丸の内</dt>
+ <dd>
+  % for my $marunouchi(@$Marunouchi){
+   <li><%= $marunouchi %></li>
+  % }
+ </dd>
+ <dt>日比谷</dt>
+ <dd>
+  % for my $hibiya(@$Hibiya){
+  <li><%=  $hibiya %></li>
+  % }
+ </dd>
+ <dt>東西</dt>
+ <dd>
+  % for my $tozai(@$Tozai){
+  <li><%= $tozai %></li>
+  % }
+ </dd>
+ <dt>千代田</dt>
+ <dd>
+  % for my $chiyoda(@$Chiyoda){
+  <li><%= $chiyoda %></li>
+  % }
+ </dd>
+ <dt>有楽町</dt>
+ <dd>
+  % for my $yurakucho(@$Yurakucho){
+  <li><%= $yurakucho %></li>
+  % }
+ </dd>
+ <dt>半蔵門</dt>
+ <dd>
+  % for my $hanzomon(@$Hanzomon){
+  <li><%= $hanzomon %></li>
+  % }
+ </dd>
+ <dt>南北</dt>
+ <dd>
+  % for my $namboku(@$Namboku){
+  <li><%= $namboku %></li>
+  % }
+ </dd>
+<dt>副都心</dt>
+ <dd>
+  % for my $fukutoshin(@$Fukutoshin){
+  <li><%= $fukutoshin %></li>
+  % }
+ </dd>
+</div>
+
+<script type="text/javascript">
+  $(function(){
+    $("#acMenu dt").on("click",function(){
+      $(this).next().slideToggle();
+    });
+  });
+
+$(document).ready(function(){
+ $("#get_val").on("click",function(){
+   var line_name = $("#line option:selected").text();
+   $.ajax({
+     type: 'GET',
+     url: 'http://localhost:3000/linewomen',
+     datatype: 'json',
+     data: {
+       linetitle: line_name,
+     },
+     success: function(json){
+      alert('success');
+     },
+     error: function(){
+      alert('error');
+     }
+   });
+ });
+});
+</script>
+<style type="text/css">
+#acMenu dt{
+    display:block;
+    width:200px;
+    height:50px;
+    line-height:50px;
+    text-align:center;
+    border:#666 1px solid;
+    cursor:pointer;
+    }
+#acMenu dd{
+    background:#f2f2f2;
+    width:500px;
+    height:1500px;
+    line-height:50px;
+    text-align:center;
+    border:#666 1px solid;
+    display:none;
+}
+</style>
+</body>
+</html>
+
 
 @@ women.html.ep
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -226,8 +361,15 @@ $(document).ready(function(){
 
  <select id="to">
   <option value="">到達駅</option>
-  <option value="jinbocho">神谷町</option>
-  <option value="ichigaya">市ヶ谷</option>
+   % for my $line(@$Line){
+    % for my $linename(keys %$line){
+     <optgroup label="<%= $linename%>">
+      % for my $stationname(@{$line->{$linename}}) {
+       <option value="<%= $stationname%>"><%= $stationname%></option>
+      %}
+    </optgroup>
+    %}
+   %}
  </select>
 
  <input type="button" value="valueを取得" id="get_val">
@@ -250,7 +392,7 @@ $(document).ready(function(){
        to: to,
      },
      success: function(json){
-       $("#output").append(json.fare);
+       $("#output").text(json.fare);
      },
      error: function(){
       alert('error');
