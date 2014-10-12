@@ -12,6 +12,11 @@ get '/' => sub{
  my $line = $metro->line_japanese;
 } => 'index';
 
+get '/women' => sub{
+ my $self = shift;
+ $self->render('women');
+};
+
 get '/unko' => sub{
  my $self = shift;
  $self->render('unko');
@@ -51,9 +56,80 @@ get '/linename' => sub{
  $self->render(json => {information => $unko_information,linename => $params->{'linename'}});
 };
 
+get '/linewomen' => sub{
+ my $self = shift;
+ my $params = $self->req->params->to_hash; 
+ my $women_information = $metro->get_women_info_by_linetitle($params->{'linetitle'});
+ my $json_params = {
+  to  =>  $women_information->[0]->{'odpt:toStation'},
+  from => $women_information->[0]->{'odpt:fromStation'},
+  car =>  $women_information->[0]->{'odpt:carComposition'},
+  timefrom => $women_information->[0]->{'odpt:availableTimeFrom'},
+  timeuntil =>  $women_information->[0]->{'odpt:avalilableTimeUntil'},
+  operationDay =>  $women_information->[0]->{'odpt:operationDay'},
+  carNumber => $women_information->[0]->{'odpt:carNumber'},
+ };
+ $self->render(json => $json_params);
+};
+
 app->start;
 
 __DATA__
+
+@@ women.html.ep
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equive="Content-Type" content="text/html; charset=UTF-8">
+<title>Station Application</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript">
+</script>
+</head>
+<body>
+
+ <select id="line">
+  <option value="TokyoMetro.Marunouchi">丸の内</option>
+  <option value="TokyoMetro.Hibiya">日比谷</option>
+  <option value="TokyoMetro.Ginza">銀座</option>
+  <option value="TokyoMetro.Tozai">東西</option>
+  <option value="TokyoMetro.Chiyoda">千代田</option>
+  <option value="TokyoMetro.Yurakucho">有楽町</option>
+  <option value="TokyoMetro.Hanzomon">半蔵門</option>
+  <option value="TokyoMetro.Namboku">南北</option>
+  <option value="TokyoMetro.Fukutoshin">副都心</option>
+  <br/><input type="button" value="女性専用車両情報を取得" id="get_val"> <br/>
+ </select>
+
+<div id="output"></div></br>
+
+<script type="text/javascript">
+
+$(document).ready(function(){
+ $("#get_val").on("click",function(){
+
+   var line_name = $("#line option:selected").text();
+   $.ajax({
+     type: 'GET',
+     url: 'http://localhost:3000/linewomen',
+     datatype: 'json',
+     data: {
+       linetitle: line_name,
+     },
+     success: function(json){
+       $('#output').html('行き先駅：' + json.to + '</br>' + '出発駅:' + json.from +'</br>'+ '車両編成:' + json.car + '</br>'+ '適応曜日:' +json.operationDay + '</br>'+ '終了時刻:' +json.timeuntil +'</br>'+'開始時刻:' + json.timefrom + '</br>' + '女性専用車:' + json.carNumber + '号車'+ '</br>');
+     },
+     error: function(){
+      alert('error');
+     }
+   });
+ });
+});
+</script>
+<style type="text/css">
+</style>
+</body>
+</html>
+
 
 @@ unko.html.ep
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">

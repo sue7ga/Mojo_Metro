@@ -65,7 +65,7 @@ sub line_japanese{
          my $line_hash = {};
          $line_hash->{line} = $metro_line;
          $line_hash->{japanese} = $station->[0]->{$metro_line};
-         push @$japanese_line,$line_hash;        
+         push @$japanese_line,$line_hash;
      }
      $key =~ s/odpt.Railway://;
      $hash->{linename} = $key;
@@ -171,7 +171,28 @@ sub get_facility_by_to{
  return $json->[0]->{"odpt:barrierfreeFacility"};
 }
 
+sub get_women_info_by_linetitle{
+ my($self,$line_title) = @_;
+ $line_title  = Encode::decode_utf8($line_title);  
+ my $railurl = END_POINT."datapoints";
+ my $rail = URI->new($railurl);
+ my $param = {
+  "rdf:type" => "odpt:Railway",
+  "dc:title" => $line_title,
+  "acl:consumerKey" => $self->api_key,
+ };
+ $rail->query_form(%$param);
+ $rail =~ s/%3A/:/g;
+ print Dumper $rail;
+ my $ua = LWP::UserAgent->new;
+ my $res = $ua->get($rail);
+ my $json = JSON::decode_json($res->decoded_content);
+ return $json->[0]->{'odpt:womenOnlyCar'}->[0];
+};
+
 my $metro = Metro->new(api_key => 'e4346dc05e12b8e457bdfe693a858f83aa7a31ebed6af708f410543c4e5e5c4b');
+
+#print Dumper $metro->get_women_info_by_linetitle('日比谷');
 
 
 1;
