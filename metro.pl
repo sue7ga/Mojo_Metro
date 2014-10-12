@@ -7,9 +7,27 @@ use utf8;
 
 my $metro = Metro->new(api_key => 'e4346dc05e12b8e457bdfe693a858f83aa7a31ebed6af708f410543c4e5e5c4b');
 
+my $line_name_map = {
+    '丸の内線' => 'TokyoMetro.Marunouchi',
+    '日比谷線' => 'TokyoMetro.Hibiya',
+    '銀座線' => 'TokyoMetro.Ginza',
+    '東西線' => 'TokyoMetro.Tozai',
+    '千代田線'  => 'TokyoMetro.Chiyoda',
+    '有楽町線' => 'TokyoMetro.Yurakucho',
+    '半蔵門線'  => 'TokyoMetro.Hanzomon',
+    '南北線' => 'TokyoMetro.Namboku',
+    '副都心線' => 'TokyoMetro.Fukutoshin',
+    '丸の内線分岐'  => 'TokyoMetro.MarunouchiBranch'
+};
+
 get '/' => sub{
  my $self = shift;
- my $line = $metro->line_japanese;
+ my $line = $metro->line_japanese; 
+ my %reverse_line_name_map = reverse %$line_name_map;
+ #my *linename_map = \$Metro::line_name_map;
+ #print Dumper *$linename_map{HASH};
+ $self->stash->{linename_map} = \%reverse_line_name_map;#*$linename_map{HASH};
+ $self->stash->{station_map} = $metro->station->[0];
  $self->stash->{Line} = $metro->line;
 } => 'index';
 
@@ -46,6 +64,7 @@ get '/foo.json' => sub{
 get '/hoge.json' => sub{
  my $self = shift;
  my $params =  $self->req->params->to_hash;
+ print Dumper $params;
  my $from = $params->{'from'};
  my $to = $params->{'to'};
  my $fare = $metro->get_fare_by_from_to($from,$to);
@@ -336,44 +355,43 @@ $(document).ready(function(){
 <body>
 
 <form>
- <select id="from" >
+
+ <select id="from">
   <option value="">出発駅</option>
-
-  <optgroup label="半蔵門">
-   <option value="Sumiyoshi">住吉</option>
-   <option value="ootemachi">大手町</option>
-   <option value="kudanshita">九段下</option>
-   <option value="shibuya">渋谷</option>
-  </optgroup>
-
-  <optgroup label="丸の内">
-   <option value="ogikubo">荻窪</option>
-   <option value="shinnjuku">新宿</option>
-   <option value="ikebukuro">池袋</option>
-  </optgroup>
-
-  <optgroup label="東西線">
-   <option value="waseda">早稲田</option>
-   <option value="takadanobaba">高田馬場</option>
-   <option value="nakano">中野</option>
-  </optgroup>
+  % for my $line(@$Line){
+    % for my $linename(keys %$line){
+      % my $jap_linename = ($linename =~ s/odpt.Railway://r);
+     <optgroup label="<%= $linename_map->{$jap_linename}%>">
+      % for my $stationname(@{$line->{$linename}}) {
+       <option value="<%= $stationname %>">
+        % my $new_station_name = ($stationname =~ s/odpt.Station:TokyoMetro.(\w+).//r);my $station_japaname =  $station_map->{$new_station_name};
+            <%= $station_japaname %>
+       </option>
+      %}
+    </optgroup>
+    %}
+  %}
  </select>
 
  <select id="to">
   <option value="">到達駅</option>
    % for my $line(@$Line){
     % for my $linename(keys %$line){
-     <optgroup label="<%= $linename%>">
+      % my $jap_linename = ($linename =~ s/odpt.Railway://r);
+     <optgroup label="<%= $linename_map->{$jap_linename}%>">
       % for my $stationname(@{$line->{$linename}}) {
-       <option value="<%= $stationname%>"><%= $stationname%></option>
+       <option value="<%= $stationname %>">
+        % my $new_station_name = ($stationname =~ s/odpt.Station:TokyoMetro.(\w+).//r);my $station_japaname =  $station_map->{$new_station_name};
+            <%= $station_japaname %>
+       </option>
       %}
     </optgroup>
     %}
-   %}
+  %}
  </select>
 
- <input type="button" value="valueを取得" id="get_val">
  <input type="button" value="textを取得" id="get_text">
+
 </form>
 
 <div id="output"></div></br>
@@ -381,8 +399,8 @@ $(document).ready(function(){
 <script type="text/javascript">
 $(document).ready(function(){
  $("#get_text").on("click",function(){
-   var from = $("#from option:selected").text();
-   var to = $("#to option:selected").text();
+   var from = $("#from option:selected").val();
+   var to = $("#to option:selected").val();
    $.ajax({
      type: 'GET',
      url: 'http://localhost:3000/hoge.json',
