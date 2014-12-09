@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Mojolicious::Lite;
+plugin "bootstrap3";
 use Metro;
 use Data::Dumper;
 use utf8;
@@ -22,31 +23,39 @@ my $line_name_map = {
 
 get '/' => sub{
  my $self = shift;
- my $line = $metro->line_japanese; 
  my %reverse_line_name_map = reverse %$line_name_map;
- #my *linename_map = \$Metro::line_name_map;
- #print Dumper *$linename_map{HASH};
- $self->stash->{linename_map} = \%reverse_line_name_map;#*$linename_map{HASH};
+ $self->stash->{linename_map} = \%reverse_line_name_map;
  $self->stash->{station_map} = $metro->station->[0];
  $self->stash->{Line} = $metro->line;
 } => 'index';
 
-get '/women' => sub{
+get '/facility' => sub{
  my $self = shift;
+} => 'facility';
+
+get '/show' => sub{
+ my $self = shift;
+ my %reverse_line_name_map = reverse %$line_name_map;
+ $self->stash->{linename_map} = \%reverse_line_name_map;
+ $self->stash->{station_map} = $metro->station->[0];
+ $self->stash->{Line} = $metro->line;
+} => 'show';
+
+get '/station.json' => sub{
+ my $self = shift;
+ my $params =  $self->req->params->to_hash;
+ my $connect_stationlist = $metro->get_connectstationinfo_by_stationname($params->{'station'},$params->{'line'});
+ $self->render(json => {fare => $connect_stationlist});
+};
+
+get '/women/:linename' => sub{  
+ my $self = shift;
+ print Dumper $self->param('linename');
  $self->render('women');
 };
 
 get '/connect' => sub{
  my $self = shift;
- $self->stash->{Ginza} = $metro->line->[1]->{'odpt.Railway:TokyoMetro.Ginza'};
- $self->stash->{Marunouchi} = $metro->line->[2]->{'odpt.Railway:TokyoMetro.Marunouchi'};
- $self->stash->{Hibiya} = $metro->line->[3]->{'odpt.Railway:TokyoMetro.Hibiya'};
- $self->stash->{Tozai} = $metro->line->[4]->{'odpt.Railway:TokyoMetro.Tozai'};
- $self->stash->{Chiyoda} = $metro->line->[5]->{'odpt.Railway:TokyoMetro.Chiyoda'};
- $self->stash->{Yurakucho} = $metro->line->[6]->{'odpt.Railway:TokyoMetro.Yurakucho'};
- $self->stash->{Hanzomon} = $metro->line->[7]->{'odpt.Railway:TokyoMetro.Hanzomon'};
- $self->stash->{Namboku} = $metro->line->[8]->{'odpt.Railway:TokyoMetro.Namboku'};
- $self->stash->{Fukutoshin} = $metro->line->[9]->{'odpt.Railway:TokyoMetro.Fukutoshin'};
  $self->render('connect');
 };
 
@@ -64,10 +73,9 @@ get '/foo.json' => sub{
 get '/hoge.json' => sub{
  my $self = shift;
  my $params =  $self->req->params->to_hash;
- print Dumper $params;
  my $from = $params->{'from'};
  my $to = $params->{'to'};
- my $fare = $metro->get_fare_by_from_to($from,$to);
+ my $fare = $metro->get_fare_by_from_to_direct($from,$to);
  $fare = $fare."円";
  $self->render(json => {fare => $fare});
 };
@@ -110,94 +118,160 @@ app->start;
 
 __DATA__
 
-@@ connect.html.ep
+@@ layouts/default.html.ep
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
+      %= asset "bootstrap.css"
+      %= asset "bootstrap.js"
 <meta http-equive="Content-Type" content="text/html; charset=UTF-8">
 <title>Station Application</title>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript">
 </script>
-<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="js/jMenu.jquery.min.js"></script>
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 </head>
+
 <body>
 
-<div id="acMenu">
- <dt>銀座線</dt>
- <dd>
-  % for my $ginza(@$Ginza){
-  <li><%= $ginza %></li>
-  % }
- </dd>
- <dt>丸の内</dt>
- <dd>
-  % for my $marunouchi(@$Marunouchi){
-   <li><%= $marunouchi %></li>
-  % }
- </dd>
- <dt>日比谷</dt>
- <dd>
-  % for my $hibiya(@$Hibiya){
-  <li><%=  $hibiya %></li>
-  % }
- </dd>
- <dt>東西</dt>
- <dd>
-  % for my $tozai(@$Tozai){
-  <li><%= $tozai %></li>
-  % }
- </dd>
- <dt>千代田</dt>
- <dd>
-  % for my $chiyoda(@$Chiyoda){
-  <li><%= $chiyoda %></li>
-  % }
- </dd>
- <dt>有楽町</dt>
- <dd>
-  % for my $yurakucho(@$Yurakucho){
-  <li><%= $yurakucho %></li>
-  % }
- </dd>
- <dt>半蔵門</dt>
- <dd>
-  % for my $hanzomon(@$Hanzomon){
-  <li><%= $hanzomon %></li>
-  % }
- </dd>
- <dt>南北</dt>
- <dd>
-  % for my $namboku(@$Namboku){
-  <li><%= $namboku %></li>
-  % }
- </dd>
-<dt>副都心</dt>
- <dd>
-  % for my $fukutoshin(@$Fukutoshin){
-  <li><%= $fukutoshin %></li>
-  % }
- </dd>
-</div>
+<nav class="navbar navbar-default" role="navigation">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#b
+s-example-navbar-collapse-1">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Brand</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#">Link</a></li>
+        <li><a href="#">Link</a></li>
+        <li><a href="/women/marunouchi">Link</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <span class="caret"></span></a>
+          <ul class="dropdown-menu" role="menu">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+            <li class="divider"></li>
+            <li><a href="#">One more separated link</a></li>
+          </ul>
+        </li>
+      </ul>
+      <form class="navbar-form navbar-left" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </form>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="#">Link</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <span class="caret"></span></a>
+          <ul class="dropdown-menu" role="menu">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+
+<%= content %>
+
+<ul id="jMenu">
+            <li><a>女性専用車情報</a>
+                <ul>
+                    <li><a href="/women/Hibiya">日比谷線</a></li>
+                    <li><a href="/women/Marunouchi">丸の内線</a></li>
+                    <li><a href="/women/Hanzomon">半蔵門線</a></li>
+                    <li><a href="/women/Ginza">銀座線</a></li>
+                </ul>
+            </li>
+            <li><a>乗車時間情報</a>
+                <ul>
+                    <li><a>プラグイン</a></li>
+                    <li><a>コード</a></li>
+                    <li><a>PHP</a></li>
+                </ul>
+            </li>
+            <li><a>運賃情報</a>
+                <ul>
+                    <li><a>マンガ</a></li>
+                    <li><a>映画</a></li>
+                    <li><a>ゲーム</a></li>
+                    <li><a>スポーツ</a></li>
+                </ul>
+            </li>
+            <li><a>駅施設情報</a>
+                <ul>
+                    <li><a>ドリブル</a></li>
+                    <li><a>パス</a></li>
+                    <li><a>シュート</a></li>
+                    <li><a>ディフェンス</a></li>
+                </ul>
+            </li>
+            <li><a>接続駅情報</a>
+                <ul>
+                    <li><a>ドリブル</a></li>
+                    <li><a>パス</a></li>
+                    <li><a>シュート</a></li>
+                    <li><a>ディフェンス</a></li>
+                </ul>
+            </li>
+            <li><a>駅乗降人数情報</a>
+                <ul>
+                    <li><a>ドリブル</a></li>
+                    <li><a>パス</a></li>
+                    <li><a>シュート</a></li>
+                    <li><a>ディフェンス</a></li>
+                </ul>
+            </li>
+</ul>
+
 
 <script type="text/javascript">
-  $(function(){
-    $("#acMenu dt").on("click",function(){
-      $(this).next().slideToggle();
-    });
-  });
-
 $(document).ready(function(){
- $("#get_val").on("click",function(){
-   var line_name = $("#line option:selected").text();
+
+ $("#jMenu").jMenu();
+    // more complex jMenu plugin called
+    $("#jMenu").jMenu({
+      ulWidth : 'auto',
+      effects : {
+        effectSpeedOpen : 300,
+        effectTypeClose : 'slide'
+      },
+      animatedText : false
+    });
+
+ $("#get_text").on("click",function(){
+   var line = $("#station option:selected").val();
+   var station = $("#station option:selected").text();
    $.ajax({
      type: 'GET',
-     url: 'http://localhost:3000/linewomen',
+     url: 'http://localhost:3000/station.json',
      datatype: 'json',
      data: {
-       linetitle: line_name,
+       station: station,
+       line: line,
      },
      success: function(json){
-      alert('success');
+       alert('success');
      },
      error: function(){
       alert('error');
@@ -206,29 +280,98 @@ $(document).ready(function(){
  });
 });
 </script>
+
 <style type="text/css">
-#acMenu dt{
-    display:block;
-    width:200px;
-    height:50px;
-    line-height:50px;
-    text-align:center;
-    border:#666 1px solid;
-    cursor:pointer;
-    }
-#acMenu dd{
-    background:#f2f2f2;
-    width:500px;
-    height:1500px;
-    line-height:50px;
-    text-align:center;
-    border:#666 1px solid;
-    display:none;
+ #output{
+   font-size: 10px;
+   background: #cc9999;
+ }
+
+#jMenu{
+  display:table;
+  margin:0;
+  padding:0;
+  list-style:none;
+ }
+
+ #jMenu li{
+  display:table-cell;
+  background-color:#322f32;
+  margin:0;
+  list-style:none;
+  width:150px;
+  text-align: center;
+ }
+
+ #jMenu li a{
+  padding:10px 15px;
+  display:block;
+  background-color:transparent;
+  color:#fff;
+  text-transform:uppercase;
+  cursor:pointer;
+  font-size:12px;
+  }
+#jMenu li a:hover{
+background-color:#3a3a3a;
+}
+#jMenu li:hover>a{
+background-color:#3a3a3a;
+}
+#jMenu li ul{
+display:none;
+position:absolute;
+z-index:9999;
+padding:0;
+margin:0;
+list-style:none;
+}
+#jMenu li ul li{
+background-color:#322f32;
+display:block;
+border-bottom:1px solid #484548;
+padding:0;
+list-style:none;
+position:relative;
+}
+#jMenu li ul li a{
+text-transform:none;
+display:block;
+padding:7px;
+border-top:1px solid transparent;
+border-bottom:1px solid transparent;
+}
+#jMenu li ul li a.isParent{
+background-color:#3a3a3a;
+}g
+#jMenu li ul li a:hover{
+background-color:#514c52;
+border-top:1px solid #322f32;
+border-bottom:1px solid #322f32;
 }
 </style>
 </body>
 </html>
 
+@@ facility.html.ep
+% layout 'default';
+
+<p>
+<b>hogehoge</b>
+</p>
+<a href='/'>戻る</a>
+
+
+@@ connect.html.ep
+
+% layout 'default';
+
+
+
+<style type="text/css">
+</style>
+</body>
+</html>
 
 @@ women.html.ep
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -286,15 +429,8 @@ $(document).ready(function(){
 
 
 @@ unko.html.ep
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<meta http-equive="Content-Type" content="text/html; charset=UTF-8">
-<title>Station Application</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript">
-</script>
-</head>
-<body>
+
+% layout 'default';
 
  <select id="line">
   <option value="TokyoMetro.Marunouchi">丸の内線</option>
@@ -313,7 +449,6 @@ $(document).ready(function(){
 <div id="output"></div></br>
 
 <script type="text/javascript">
-
 $(document).ready(function(){
  $("#get_val").on("click",function(){
    var line_val = $("#line option:selected").val();
@@ -335,26 +470,35 @@ $(document).ready(function(){
    });
  });
 });
-
 </script>
-<style type="text/css">
-</style>
-</body>
-</html>
+
 
 @@ index.html.ep
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<meta http-equive="Content-Type" content="text/html; charset=UTF-8">
-<title>Station Application</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript">
-</script>
-</head>
-<body>
+% layout 'default';
 
 <form>
+
+ <select id="line">
+  <option value="">接続駅検索</option>
+  % for my $line(@$Line){
+    % for my $linename(keys %$line){
+      % my $jap_linename = ($linename =~ s/odpt.Railway://r);
+     <optgroup label="<%= $linename_map->{$jap_linename}%>">
+      % for my $stationname(@{$line->{$linename}}) {
+       <option value="<%= $stationname %>">
+        % my $new_station_name = ($stationname =~ s/odpt.Station:TokyoMetro.(\w+).//r);my $station_japaname =  $station_map->{$new_station_name};
+            <%= $station_japaname %>
+       </option>
+      %}
+    </optgroup>
+    %}
+  %}
+ </select>
+
+ <input type="button" value="textを取得" id="get_text">
+
+</from>
+
 
  <select id="from">
   <option value="">出発駅</option>
@@ -434,8 +578,67 @@ $(document).ready(function(){
    <input type="submit" value="Post">
   </from>
 
-</body>
-</html>
+
+@@ show.html.ep
+
+% layout 'default';
+
+<form>
+
+ <select id="station">
+  <option value="">駅検索</option>
+  % for my $line(@$Line){
+    % for my $linename(keys %$line){
+      % my $jap_linename = ($linename =~ s/odpt.Railway://r);
+     <optgroup label="<%= $linename_map->{$jap_linename}%>">
+      % for my $stationname(@{$line->{$linename}}) {
+       <option value="<%= $linename %>">
+        % my $new_station_name = ($stationname =~ s/odpt.Station:TokyoMetro.(\w+).//r);my $station_japaname =  $station_map->{$new_station_name};
+            <%= $station_japaname %>
+       </option>
+      %}
+    </optgroup>
+    %}
+  %}
+ </select>
+
+
+ <input type="button" value="接続駅を調べる" id="get_text">
+
+</form>
+
+<div id="output"></div></br>
+
+<script type="text/javascript">
+$(document).ready(function(){
+ $("#get_text").on("click",function(){
+   var line = $("#station option:selected").val();
+   var station = $("#station option:selected").text();
+   $.ajax({
+     type: 'GET',
+     url: 'http://localhost:3000/station.json',
+     datatype: 'json',
+     data: {
+       station: station,
+       line: line,
+     },
+     success: function(json){
+       alert('success');
+     },
+     error: function(){
+      alert('error');
+     }
+   });
+ });
+});
+</script>
+
+<style type="text/css">
+ #output{
+   font-size: 10px;
+   background: #cc9999;
+ }
+</style>
 
 @@ fare.html.ep
 
@@ -463,7 +666,6 @@ $(document).ready(function(){
   % }
 
 </p>
-
 
 <a href="/"></a>
 

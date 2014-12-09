@@ -91,7 +91,6 @@ my $line_name_map = {
 
 sub get_trainInformationText_by_linename{
  my ($self,$linename) = @_;
- #$linename = Encode::encode_utf8($linename);
  my $param = {
   "rdf:type" => "odpt:TrainInformation",
   "odpt:railway" => "odpt.Railway:"."$linename",
@@ -104,7 +103,6 @@ sub get_trainInformationText_by_linename{
  my $ua = LWP::UserAgent->new;
  my $res = $ua->get($railway);
  my $json = JSON::decode_json($res->decoded_content);
- print Dumper $json->[0]->{'odpt:timeOfOrigin'};
  return $json->[0]->{'odpt:trainInformationText'};
 }
 
@@ -123,6 +121,45 @@ sub station_japname_2_englishname{
 };
 
 no utf8;
+
+sub get_connectstationinfo_by_stationname{
+ my($self,$stationname,$linename) = @_;
+ #$stationname = Encode::decode_utf8($stationname);
+ my $param = {
+  "rdf:type" => "odpt:Station",
+  "dc:title" => $stationname,
+  "odpt:railway" => $linename,
+  "acl:consumerKey" => $self->api_key,
+ };
+ my $url = END_POINT."datapoints";
+ my $railway = URI->new($url);
+ $railway->query_form(%$param);
+ $railway =~ s/%3A/:/g;
+ print Dumper $railway;
+ my $ua = LWP::UserAgent->new;
+ my $res = $ua->get($railway);
+ my $json = JSON::decode_json($res->decoded_content);
+ return $json;
+}
+
+
+sub get_fare_by_from_to_direct{
+ my($self,$from,$to) = @_;
+my $railfare = END_POINT."datapoints";
+ my $railurl = URI->new($railfare);
+ my $param = {
+  "rdf:type" => "odpt:RailwayFare",
+  "odpt:fromStation" => $from,
+  "odpt:toStation" => $to,
+  "acl:consumerKey" => $self->api_key,
+ };
+ $railurl->query_form(%$param);
+ $railurl =~ s/%3A/:/g;
+ my $ua = LWP::UserAgent->new;
+ my $res = $ua->get($railurl);
+ my $json = JSON::decode_json($res->decoded_content);
+ return $json->[0]->{'odpt:ticketFare'};
+}
 
 sub get_fare_by_from_to{
  my $self = shift;
@@ -197,7 +234,6 @@ sub get_women_info_by_linetitle{
  };
  $rail->query_form(%$param);
  $rail =~ s/%3A/:/g;
- print Dumper $rail;
  my $ua = LWP::UserAgent->new;
  my $res = $ua->get($rail);
  my $json = JSON::decode_json($res->decoded_content);
